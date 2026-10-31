@@ -13,3 +13,4 @@ perf/
 scripts/
 *.md
 docker-compose.yml
+.venv/
