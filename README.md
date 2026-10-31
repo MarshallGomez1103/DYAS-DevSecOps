@@ -1,5 +1,7 @@
 # Taller de DevSecOps y Despliegue Continuo con GitHub Actions
 
+**Estudiante:** Elioth Gomez — eliothgomo@unisabana.edu.co
+
 Este taller tiene como objetivo aprender a **incorporar la seguridad y la verificación de la arquitectura dentro del pipeline** y a **desplegar automáticamente cada versión aprobada**, de forma que un cambio solo llegue a producción si compila, pasa las pruebas, respeta la arquitectura, no introduce vulnerabilidades conocidas, fue construido y firmado por el propio pipeline y cumple el SLO una vez desplegado.
 La correspondencia con el proyecto del curso está en [Cómo usar esta guía para tu proyecto](#cómo-usar-esta-guía-para-tu-proyecto).
 
@@ -276,7 +278,7 @@ El detalle de cada etapa, la vista de despliegue y el procedimiento de reversió
 ### Prerrequisitos
 
 Se asume que conoces **Docker Compose**, **GitHub Actions** y **pruebas con JUnit**. Como referencia opcional están los talleres
-[Integración continua](https://github.com/CesarAVegaF312/DAYS-Integracion_continua),
+[Integración continua](https://github.com/CesarAVegaF312/DYAS-Integracion_continua),
 [Docker](https://github.com/CesarAVegaF312/DYAS-Docker) y
 [Monitoreo](https://github.com/CesarAVegaF312/DYAS-Monitoreo).
 
