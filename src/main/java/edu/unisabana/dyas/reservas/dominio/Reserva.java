@@ -7,6 +7,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import org.springframework.util.StringUtils;
+
 /**
  * Reserva de una sala de estudio de la biblioteca.
  *
@@ -57,7 +59,7 @@ public final class Reserva {
         validarSala(sala);
         validarResponsable(responsable);
         validarHorario(fecha, inicio, fin, hoy);
-        if (registradaPor == null || registradaPor.isBlank()) {
+        if (!StringUtils.hasText(registradaPor)) {
             throw new ReservaInvalidaException("Toda reserva debe indicar quién la registró");
         }
         return new Reserva(UUID.randomUUID(), sala, responsable, fecha, inicio, fin, registradaPor,
