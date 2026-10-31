@@ -229,14 +229,17 @@ jobs:
         run: scripts/deploy.sh "${{ steps.firma.outputs.referencia }}"
 
       - name: Prueba de humo
+        id: humo
         timeout-minutes: 3
         run: scripts/smoke-test.sh "${{ needs.publicar.outputs.version-completa }}"
 
       - name: Prueba de carga del SLO (k6)
+        id: slo
         timeout-minutes: 5
         run: scripts/slo.sh
 
       - name: Registrar la versión verificada
+        id: registrar
         env:
           IMAGEN: ${{ steps.firma.outputs.referencia }}
         run: |
@@ -255,7 +258,7 @@ jobs:
       # Si el despliegue, la prueba de humo o el SLO fallan, se vuelve a la versión anterior.
       # El pipeline queda en rojo de todas formas: la versión nueva no pasó la verificación.
       - name: Reversión automática
-        if: failure() && steps.desplegar.outcome != 'skipped'
+        if: failure() && (steps.desplegar.outcome == 'failure' || steps.humo.outcome == 'failure' || steps.slo.outcome == 'failure' || steps.registrar.outcome == 'failure')
         timeout-minutes: 5
         run: |
           if [[ -s "$RUNNER_TEMP/reservas-version-previa" ]]; then
