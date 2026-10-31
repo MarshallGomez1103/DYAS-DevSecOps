@@ -194,7 +194,9 @@ jobs:
         run: |
           echo "DEPLOY_STATE_DIR=$RUNNER_WORKSPACE/.reservas-despliegue-cd" >> "$GITHUB_ENV"
           echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/docker-reservas-cd"
+          echo "TUF_ROOT=$RUNNER_TEMP/sigstore-reservas-cd" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
+          chmod 700 "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
 
       - name: Iniciar sesión en GHCR
         env:
@@ -318,7 +320,9 @@ jobs:
         run: |
           echo "DEPLOY_STATE_DIR=$RUNNER_WORKSPACE/.reservas-despliegue-cd" >> "$GITHUB_ENV"
           echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/docker-reservas-cd"
+          echo "TUF_ROOT=$RUNNER_TEMP/sigstore-reservas-cd" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
+          chmod 700 "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
 
       - name: Validar el tag
         run: |
