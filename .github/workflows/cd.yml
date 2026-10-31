@@ -177,10 +177,33 @@ jobs:
       GESTOR_CLAVE: ${{ secrets.GESTOR_CLAVE }}
       CONSULTA_USUARIO: ${{ vars.CONSULTA_USUARIO }}
       CONSULTA_CLAVE: ${{ secrets.CONSULTA_CLAVE }}
-      BASE_URL: http://localhost:8090
+      COMPOSE_PROJECT_NAME: reservas-cd
+      APP_PORT: '18090'
+      POSTGRES_PORT: '15433'
+      BASE_URL: http://localhost:18090
     steps:
+      - name: Ocultar rutas del runner en los registros
+        run: |
+          echo "::add-mask::$HOME"
+          echo "::add-mask::$RUNNER_WORKSPACE"
+          echo "::add-mask::$RUNNER_TEMP"
+          echo "::add-mask::$GITHUB_WORKSPACE"
+
       - name: Descargar el código (docker-compose.yml, scripts y perf/)
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Comprobar el entorno local anterior
+        run: scripts/verificar-entorno-local.sh
+
+      - name: Preparar el entorno de despliegue
+        run: |
+          echo "DEPLOY_STATE_DIR=$RUNNER_WORKSPACE/.reservas-despliegue-cd" >> "$GITHUB_ENV"
+          echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
+          echo "TUF_ROOT=$RUNNER_TEMP/sigstore-reservas-cd" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
+          chmod 700 "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
 
       - name: Iniciar sesión en GHCR
         env:
@@ -204,15 +227,37 @@ jobs:
             echo "referencia=$REFERENCIA" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Guardar la última versión verificada
+        run: |
+          if [[ -f "$DEPLOY_STATE_DIR/verificada" ]]; then
+            cat "$DEPLOY_STATE_DIR/verificada" > "$RUNNER_TEMP/reservas-version-previa"
+          else
+            : > "$RUNNER_TEMP/reservas-version-previa"
+          fi
+
       - name: Desplegar con Docker Compose
         id: desplegar
+        timeout-minutes: 5
         run: scripts/deploy.sh "${{ steps.firma.outputs.referencia }}"
 
       - name: Prueba de humo
+        id: humo
+        timeout-minutes: 3
         run: scripts/smoke-test.sh "${{ needs.publicar.outputs.version-completa }}"
 
       - name: Prueba de carga del SLO (k6)
+        id: slo
+        timeout-minutes: 5
         run: scripts/slo.sh
+
+      - name: Registrar la versión verificada
+        id: registrar
+        env:
+          IMAGEN: ${{ steps.firma.outputs.referencia }}
+        run: |
+          mkdir -p "$DEPLOY_STATE_DIR"
+          printf '%s\n' "$IMAGEN" > "$DEPLOY_STATE_DIR/verificada.tmp"
+          mv "$DEPLOY_STATE_DIR/verificada.tmp" "$DEPLOY_STATE_DIR/verificada"
 
       - name: Publicar reporte de la prueba de carga
         if: always()
@@ -225,8 +270,20 @@ jobs:
       # Si el despliegue, la prueba de humo o el SLO fallan, se vuelve a la versión anterior.
       # El pipeline queda en rojo de todas formas: la versión nueva no pasó la verificación.
       - name: Reversión automática
-        if: failure() && steps.desplegar.outcome != 'skipped'
-        run: scripts/rollback.sh
+        if: failure() && (steps.desplegar.outcome == 'failure' || steps.humo.outcome == 'failure' || steps.slo.outcome == 'failure' || steps.registrar.outcome == 'failure')
+        timeout-minutes: 5
+        run: |
+          if [[ -s "$RUNNER_TEMP/reservas-version-previa" ]]; then
+            PREVIA="$(cat "$RUNNER_TEMP/reservas-version-previa")"
+            scripts/rollback.sh "$PREVIA"
+            printf '%s\n' "$PREVIA" > "$DEPLOY_STATE_DIR/verificada.tmp"
+            mv "$DEPLOY_STATE_DIR/verificada.tmp" "$DEPLOY_STATE_DIR/verificada"
+          else
+            echo "No hay versión anterior de CD: se detiene la aplicación no verificada." >&2
+            docker compose stop app
+            rm -f "$DEPLOY_STATE_DIR/verificada"
+            exit 1
+          fi
 
       - name: Cerrar sesión en GHCR
         if: always()
@@ -235,6 +292,7 @@ jobs:
   revertir:
     name: Reversión manual
     if: github.event_name == 'workflow_dispatch' && vars.DESPLIEGUE == 'activo'
+    timeout-minutes: 15
     runs-on: [self-hosted, linux, dyas]
     environment:
       name: produccion
@@ -250,12 +308,35 @@ jobs:
       GESTOR_CLAVE: ${{ secrets.GESTOR_CLAVE }}
       CONSULTA_USUARIO: ${{ vars.CONSULTA_USUARIO }}
       CONSULTA_CLAVE: ${{ secrets.CONSULTA_CLAVE }}
-      BASE_URL: http://localhost:8090
+      COMPOSE_PROJECT_NAME: reservas-cd
+      APP_PORT: '18090'
+      POSTGRES_PORT: '15433'
+      BASE_URL: http://localhost:18090
       # El valor del formulario se pasa por variable de entorno, nunca directo dentro del script.
       TAG: ${{ inputs.tag }}
     steps:
+      - name: Ocultar rutas del runner en los registros
+        run: |
+          echo "::add-mask::$HOME"
+          echo "::add-mask::$RUNNER_WORKSPACE"
+          echo "::add-mask::$RUNNER_TEMP"
+          echo "::add-mask::$GITHUB_WORKSPACE"
+
       - name: Descargar el código
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Comprobar el entorno local anterior
+        run: scripts/verificar-entorno-local.sh
+
+      - name: Preparar el entorno de despliegue
+        run: |
+          echo "DEPLOY_STATE_DIR=$RUNNER_WORKSPACE/.reservas-despliegue-cd" >> "$GITHUB_ENV"
+          echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
+          echo "TUF_ROOT=$RUNNER_TEMP/sigstore-reservas-cd" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
+          chmod 700 "$RUNNER_TEMP/docker-reservas-cd" "$RUNNER_TEMP/sigstore-reservas-cd"
 
       - name: Validar el tag
         run: |
@@ -286,6 +367,14 @@ jobs:
 
       - name: Volver a desplegar la versión indicada y ejecutar la prueba de humo
         run: scripts/rollback.sh "${{ steps.firma.outputs.referencia }}"
+
+      - name: Registrar la versión restaurada
+        env:
+          IMAGEN: ${{ steps.firma.outputs.referencia }}
+        run: |
+          mkdir -p "$DEPLOY_STATE_DIR"
+          printf '%s\n' "$IMAGEN" > "$DEPLOY_STATE_DIR/verificada.tmp"
+          mv "$DEPLOY_STATE_DIR/verificada.tmp" "$DEPLOY_STATE_DIR/verificada"
 
       - name: Cerrar sesión en GHCR
         if: always()

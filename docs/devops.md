@@ -62,14 +62,14 @@ flowchart TB
 
     subgraph maquina["Máquina del equipo (Linux con Docker Engine)"]
         runner["Runner autohospedado<br/>etiqueta: dyas"]
-        subgraph compose["Proyecto Compose: reservas (red reservas_default)"]
-            app["Contenedor app<br/>imagen ghcr.io/...:sha-xxxxxxx<br/>puerto 8090 → 8080<br/>usuario 10001, solo lectura"]
-            pg[("Contenedor postgres<br/>postgres:18.6-alpine<br/>127.0.0.1:5433 → 5432<br/>volumen datos-postgres")]
+        subgraph compose["Proyecto Compose: reservas-cd"]
+            app["Contenedor app<br/>imagen ghcr.io/...:sha-xxxxxxx<br/>127.0.0.1:18090 → 8080<br/>usuario 10001, solo lectura"]
+            pg[("Contenedor postgres<br/>postgres:18.6-alpine<br/>127.0.0.1:15433 → 5432<br/>volumen datos-postgres")]
             k6["Contenedor k6 (temporal)<br/>grafana/k6:2.3.0"]
         end
     end
 
-    usuario["Cliente HTTP"] -->|"HTTP :8090"| app
+    usuario["Cliente HTTP local"] -->|"HTTP :18090"| app
     app -->|"JDBC :5432"| pg
     k6 -->|"HTTP app:8080"| app
     actions -->|"push de la imagen"| ghcr
@@ -80,6 +80,8 @@ flowchart TB
 ```
 
 El runner solo abre conexiones salientes hacia GitHub: no hace falta abrir puertos de la máquina a Internet para desplegar.
+El proyecto Compose de CD es independiente del entorno local `reservas`: usa su propio volumen y publica ambos servicios en loopback. Un runner con acceso a Docker tiene privilegios amplios sobre la máquina; estas medidas no aíslan los trabajos del sistema anfitrión.
+La decisión y sus consecuencias están registradas en [ADR-004](adr/ADR-004-aislamiento-despliegue.md).
 
 ## 4. Configuración del despliegue
 
@@ -97,13 +99,17 @@ El runner solo abre conexiones salientes hacia GitHub: no hace falta abrir puert
 
 ## 5. Reversión
 
-El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen estaba desplegada antes de cada despliegue.
+El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen estaba desplegada antes de cada despliegue. En los jobs de CD, `DEPLOY_STATE_DIR` usa el directorio `.reservas-despliegue-cd` dentro del espacio de trabajo del runner, fuera del código descargado, para conservar un historial separado.
 
 | Situación | Qué pasa |
 |---|---|
 | Falla el despliegue, la prueba de humo o el SLO | El paso *Reversión automática* ejecuta `scripts/rollback.sh`, que vuelve a la imagen anterior y repite la prueba de humo. El pipeline queda en rojo. |
 | Se detecta un problema después | Actions → CD → *Run workflow* con el tag de la imagen (por ejemplo `sha-1a2b3c4` o `1.0.0`). El job `revertir` la despliega y ejecuta la prueba de humo. |
 | Sin GitHub (en la máquina) | `scripts/rollback.sh ghcr.io/<usuario>/<repo>:<tag>` con las variables del `.env`. |
+
+El job conserva por separado la última imagen verificada y usa esa referencia si necesita revertir, incluso si falla la descarga de la nueva imagen. En un despliegue automático la registra después de la prueba de humo y el SLO; en una reversión manual, después de la prueba de humo. Los pasos de despliegue, humo y carga tienen límites individuales para que un fallo por tiempo permita iniciar la reversión. La cancelación completa del job o la caída de la máquina pueden impedir que se ejecute; en ese caso hay que comprobar el estado y revertir manualmente.
+Una falla al subir el reporte no revierte una versión que ya pasó esas verificaciones; sí deja la ejecución fallida para que el reporte se revise.
+El primer despliegue del entorno de CD no tiene una versión anterior registrada. Si falla, el workflow detiene la aplicación no verificada. El proyecto local anterior mantiene sus propios datos y estado; no se migran automáticamente.
 
 Los tags anteriores se consultan en la página del paquete en GitHub (*Packages*) o en el resumen de cada ejecución del job `publicar`.
 

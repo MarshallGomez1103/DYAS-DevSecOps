@@ -21,7 +21,7 @@ services:
       CONSULTA_USUARIO: ${CONSULTA_USUARIO:?Defina CONSULTA_USUARIO (ver .env.example)}
       CONSULTA_CLAVE: ${CONSULTA_CLAVE:?Defina CONSULTA_CLAVE (ver .env.example)}
     ports:
-      - "8090:8080"
+      - "127.0.0.1:${APP_PORT:-8090}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,7 +50,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD (ver .env.example)}
     # Solo accesible desde la misma máquina (127.0.0.1), para depurar con un cliente SQL.
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
     volumes:
       - datos-postgres:/var/lib/postgresql
     healthcheck:
