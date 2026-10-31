@@ -62,14 +62,14 @@ flowchart TB
 
     subgraph maquina["Máquina del equipo (Linux con Docker Engine)"]
         runner["Runner autohospedado<br/>etiqueta: dyas"]
-        subgraph compose["Proyecto Compose: reservas (red reservas_default)"]
-            app["Contenedor app<br/>imagen ghcr.io/...:sha-xxxxxxx<br/>puerto 8090 → 8080<br/>usuario 10001, solo lectura"]
-            pg[("Contenedor postgres<br/>postgres:18.6-alpine<br/>127.0.0.1:5433 → 5432<br/>volumen datos-postgres")]
+        subgraph compose["Proyecto Compose: reservas-cd"]
+            app["Contenedor app<br/>imagen ghcr.io/...:sha-xxxxxxx<br/>127.0.0.1:18090 → 8080<br/>usuario 10001, solo lectura"]
+            pg[("Contenedor postgres<br/>postgres:18.6-alpine<br/>127.0.0.1:15433 → 5432<br/>volumen datos-postgres")]
             k6["Contenedor k6 (temporal)<br/>grafana/k6:2.3.0"]
         end
     end
 
-    usuario["Cliente HTTP"] -->|"HTTP :8090"| app
+    usuario["Cliente HTTP local"] -->|"HTTP :18090"| app
     app -->|"JDBC :5432"| pg
     k6 -->|"HTTP app:8080"| app
     actions -->|"push de la imagen"| ghcr
@@ -80,6 +80,7 @@ flowchart TB
 ```
 
 El runner solo abre conexiones salientes hacia GitHub: no hace falta abrir puertos de la máquina a Internet para desplegar.
+El proyecto Compose de CD es independiente del entorno local `reservas`: usa su propio volumen y publica ambos servicios en loopback. Un runner con acceso a Docker tiene privilegios amplios sobre la máquina; estas medidas no aíslan los trabajos del sistema anfitrión.
 
 ## 4. Configuración del despliegue
 
@@ -97,7 +98,7 @@ El runner solo abre conexiones salientes hacia GitHub: no hace falta abrir puert
 
 ## 5. Reversión
 
-El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen estaba desplegada antes de cada despliegue.
+El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen estaba desplegada antes de cada despliegue. En los jobs de CD, `DEPLOY_STATE_DIR` usa `~/.reservas-despliegue-cd/` para conservar un historial separado.
 
 | Situación | Qué pasa |
 |---|---|

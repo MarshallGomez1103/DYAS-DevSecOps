@@ -636,6 +636,8 @@ docker build --build-arg VERSION=1.0.0-v2 -t reservas:v2 .
 
 El runner se instala en la máquina donde va a quedar desplegado el sistema.
 
+El despliegue de este repositorio usa el proyecto Compose `reservas-cd`, con API en `127.0.0.1:18090` y PostgreSQL en `127.0.0.1:15433`, separados del entorno local. Para una ejecución temporal se puede registrar el runner con `--ephemeral` y ejecutarlo con `./run.sh`; se desregistra después de aceptar un trabajo y debe registrarse de nuevo para otro. El acceso a Docker sigue dando al runner amplios privilegios sobre la máquina.
+
 1. Prepara la máquina (Linux o WSL2 con Ubuntu):
    - Docker Engine con el plugin Compose (`docker compose version` debe responder).
    - `curl` instalado.
@@ -693,7 +695,7 @@ El runner se instala en la máquina donde va a quedar desplegado el sistema.
    | `POSTGRES_USER` | `reservas` |
    | `GESTOR_USUARIO` | `gestor` |
    | `CONSULTA_USUARIO` | `consulta` |
-   | `APP_URL` | URL con la que se llega a la máquina, por ejemplo `http://<ip-de-la-maquina>:8090` |
+   | `APP_URL` | URL local de la aplicación desplegada: `http://127.0.0.1:18090` |
 
 6. Habilita los jobs del runner: *Settings → Secrets and variables → Actions → Variables → New repository variable* → `DESPLIEGUE` = `activo`.
 
@@ -716,10 +718,10 @@ El runner se instala en la máquina donde va a quedar desplegado el sistema.
    ```
 
 3. Abre el job **Desplegar y verificar** y revisa los pasos *Verificar la firma de la imagen*, *Desplegar con Docker Compose*, *Prueba de humo* y *Prueba de carga del SLO*. El enlace de `APP_URL` aparece en el resumen de la ejecución y en la página del environment. La imagen se despliega por digest: en el log de *Desplegar con Docker Compose* aparece como `ghcr.io/<usuario>/<repo>:sha-<commit>@sha256:...`.
-4. Desde otro equipo de la misma red, comprueba la versión desplegada:
+4. Desde la máquina del runner, comprueba la versión desplegada:
 
    ```sh
-   curl -s http://<ip-de-la-maquina>:8090/actuator/info
+   curl -s http://127.0.0.1:18090/actuator/info
    ```
 
    ```json

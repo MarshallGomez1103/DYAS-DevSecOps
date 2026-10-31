@@ -160,6 +160,7 @@ jobs:
     name: Desplegar y verificar
     needs: publicar
     if: vars.DESPLIEGUE == 'activo'
+    timeout-minutes: 15
     # Runner autohospedado registrado en la máquina del equipo con la etiqueta "dyas".
     runs-on: [self-hosted, linux, dyas]
     environment:
@@ -177,10 +178,21 @@ jobs:
       GESTOR_CLAVE: ${{ secrets.GESTOR_CLAVE }}
       CONSULTA_USUARIO: ${{ vars.CONSULTA_USUARIO }}
       CONSULTA_CLAVE: ${{ secrets.CONSULTA_CLAVE }}
-      BASE_URL: http://localhost:8090
+      COMPOSE_PROJECT_NAME: reservas-cd
+      APP_PORT: '18090'
+      POSTGRES_PORT: '15433'
+      BASE_URL: http://localhost:18090
     steps:
       - name: Descargar el código (docker-compose.yml, scripts y perf/)
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Preparar el entorno de despliegue
+        run: |
+          echo "DEPLOY_STATE_DIR=$HOME/.reservas-despliegue-cd" >> "$GITHUB_ENV"
+          echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/docker-reservas-cd"
 
       - name: Iniciar sesión en GHCR
         env:
@@ -235,6 +247,7 @@ jobs:
   revertir:
     name: Reversión manual
     if: github.event_name == 'workflow_dispatch' && vars.DESPLIEGUE == 'activo'
+    timeout-minutes: 15
     runs-on: [self-hosted, linux, dyas]
     environment:
       name: produccion
@@ -250,12 +263,23 @@ jobs:
       GESTOR_CLAVE: ${{ secrets.GESTOR_CLAVE }}
       CONSULTA_USUARIO: ${{ vars.CONSULTA_USUARIO }}
       CONSULTA_CLAVE: ${{ secrets.CONSULTA_CLAVE }}
-      BASE_URL: http://localhost:8090
+      COMPOSE_PROJECT_NAME: reservas-cd
+      APP_PORT: '18090'
+      POSTGRES_PORT: '15433'
+      BASE_URL: http://localhost:18090
       # El valor del formulario se pasa por variable de entorno, nunca directo dentro del script.
       TAG: ${{ inputs.tag }}
     steps:
       - name: Descargar el código
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Preparar el entorno de despliegue
+        run: |
+          echo "DEPLOY_STATE_DIR=$HOME/.reservas-despliegue-cd" >> "$GITHUB_ENV"
+          echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/docker-reservas-cd"
 
       - name: Validar el tag
         run: |
