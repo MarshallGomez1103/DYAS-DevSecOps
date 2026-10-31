@@ -215,10 +215,10 @@ jobs:
             echo "referencia=$REFERENCIA" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Guardar la versión activa antes del despliegue
+      - name: Guardar la última versión verificada
         run: |
-          if [[ -f "$DEPLOY_STATE_DIR/actual" ]]; then
-            cat "$DEPLOY_STATE_DIR/actual" > "$RUNNER_TEMP/reservas-version-previa"
+          if [[ -f "$DEPLOY_STATE_DIR/verificada" ]]; then
+            cat "$DEPLOY_STATE_DIR/verificada" > "$RUNNER_TEMP/reservas-version-previa"
           else
             : > "$RUNNER_TEMP/reservas-version-previa"
           fi
@@ -236,6 +236,14 @@ jobs:
         timeout-minutes: 5
         run: scripts/slo.sh
 
+      - name: Registrar la versión verificada
+        env:
+          IMAGEN: ${{ steps.firma.outputs.referencia }}
+        run: |
+          mkdir -p "$DEPLOY_STATE_DIR"
+          printf '%s\n' "$IMAGEN" > "$DEPLOY_STATE_DIR/verificada.tmp"
+          mv "$DEPLOY_STATE_DIR/verificada.tmp" "$DEPLOY_STATE_DIR/verificada"
+
       - name: Publicar reporte de la prueba de carga
         if: always()
         uses: actions/upload-artifact@v7
@@ -251,10 +259,14 @@ jobs:
         timeout-minutes: 5
         run: |
           if [[ -s "$RUNNER_TEMP/reservas-version-previa" ]]; then
-            scripts/rollback.sh "$(cat "$RUNNER_TEMP/reservas-version-previa")"
+            PREVIA="$(cat "$RUNNER_TEMP/reservas-version-previa")"
+            scripts/rollback.sh "$PREVIA"
+            printf '%s\n' "$PREVIA" > "$DEPLOY_STATE_DIR/verificada.tmp"
+            mv "$DEPLOY_STATE_DIR/verificada.tmp" "$DEPLOY_STATE_DIR/verificada"
           else
             echo "No hay versión anterior de CD: se detiene la aplicación no verificada." >&2
             docker compose stop app
+            rm -f "$DEPLOY_STATE_DIR/verificada"
             exit 1
           fi
 
@@ -328,6 +340,14 @@ jobs:
 
       - name: Volver a desplegar la versión indicada y ejecutar la prueba de humo
         run: scripts/rollback.sh "${{ steps.firma.outputs.referencia }}"
+
+      - name: Registrar la versión restaurada
+        env:
+          IMAGEN: ${{ steps.firma.outputs.referencia }}
+        run: |
+          mkdir -p "$DEPLOY_STATE_DIR"
+          printf '%s\n' "$IMAGEN" > "$DEPLOY_STATE_DIR/verificada.tmp"
+          mv "$DEPLOY_STATE_DIR/verificada.tmp" "$DEPLOY_STATE_DIR/verificada"
 
       - name: Cerrar sesión en GHCR
         if: always()
