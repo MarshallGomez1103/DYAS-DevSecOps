@@ -190,7 +190,7 @@ jobs:
 
       - name: Preparar el entorno de despliegue
         run: |
-          echo "DEPLOY_STATE_DIR=$HOME/.reservas-despliegue-cd" >> "$GITHUB_ENV"
+          echo "DEPLOY_STATE_DIR=$RUNNER_WORKSPACE/.reservas-despliegue-cd" >> "$GITHUB_ENV"
           echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/docker-reservas-cd"
 
@@ -277,7 +277,7 @@ jobs:
 
       - name: Preparar el entorno de despliegue
         run: |
-          echo "DEPLOY_STATE_DIR=$HOME/.reservas-despliegue-cd" >> "$GITHUB_ENV"
+          echo "DEPLOY_STATE_DIR=$RUNNER_WORKSPACE/.reservas-despliegue-cd" >> "$GITHUB_ENV"
           echo "DOCKER_CONFIG=$RUNNER_TEMP/docker-reservas-cd" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/docker-reservas-cd"
 

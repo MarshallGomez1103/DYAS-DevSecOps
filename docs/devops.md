@@ -98,7 +98,7 @@ El proyecto Compose de CD es independiente del entorno local `reservas`: usa su 
 
 ## 5. Reversión
 
-El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen estaba desplegada antes de cada despliegue. En los jobs de CD, `DEPLOY_STATE_DIR` usa `~/.reservas-despliegue-cd/` para conservar un historial separado.
+El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen estaba desplegada antes de cada despliegue. En los jobs de CD, `DEPLOY_STATE_DIR` usa el directorio `.reservas-despliegue-cd` dentro del espacio de trabajo del runner, fuera del código descargado, para conservar un historial separado.
 
 | Situación | Qué pasa |
 |---|---|
