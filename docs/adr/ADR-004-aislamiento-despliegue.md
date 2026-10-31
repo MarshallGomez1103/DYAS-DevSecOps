@@ -10,7 +10,7 @@ La máquina del taller ya cuenta con un entorno local de reservas y un volumen d
 
 El job de CD usa el proyecto Compose `reservas-cd`, un volumen de PostgreSQL propio y un directorio de estado separado dentro del espacio de trabajo del runner. La API y PostgreSQL se publican solo en loopback, respectivamente en los puertos 18090 y 15433. El entorno local conserva su proyecto `reservas` y sus datos; no se copian automáticamente al entorno de CD.
 
-Cuando existe una versión anterior del entorno de CD, el workflow intenta restaurarla si fallan el despliegue o las verificaciones. En el primer despliegue no existe esa referencia: ante un fallo se detiene la aplicación no verificada. La cancelación completa del job o una caída de la máquina pueden impedir incluso esa acción y requieren revisar el estado manualmente.
+Antes de desplegar, el workflow guarda la referencia activa del entorno de CD y trata de restaurarla si fallan el despliegue o las verificaciones, incluida la descarga de la nueva imagen. En el primer despliegue no existe esa referencia: ante un fallo se detiene la aplicación no verificada. La cancelación completa del job o una caída de la máquina pueden impedir incluso esa acción y requieren revisar el estado manualmente.
 
 ## Alternativas y consecuencias
 

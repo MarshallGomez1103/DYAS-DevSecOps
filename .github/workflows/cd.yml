@@ -215,6 +215,14 @@ jobs:
             echo "referencia=$REFERENCIA" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Guardar la versión activa antes del despliegue
+        run: |
+          if [[ -f "$DEPLOY_STATE_DIR/actual" ]]; then
+            cat "$DEPLOY_STATE_DIR/actual" > "$RUNNER_TEMP/reservas-version-previa"
+          else
+            : > "$RUNNER_TEMP/reservas-version-previa"
+          fi
+
       - name: Desplegar con Docker Compose
         id: desplegar
         timeout-minutes: 5
@@ -242,8 +250,8 @@ jobs:
         if: failure() && steps.desplegar.outcome != 'skipped'
         timeout-minutes: 5
         run: |
-          if [[ -s "$DEPLOY_STATE_DIR/anterior" ]]; then
-            scripts/rollback.sh
+          if [[ -s "$RUNNER_TEMP/reservas-version-previa" ]]; then
+            scripts/rollback.sh "$(cat "$RUNNER_TEMP/reservas-version-previa")"
           else
             echo "No hay versión anterior de CD: se detiene la aplicación no verificada." >&2
             docker compose stop app

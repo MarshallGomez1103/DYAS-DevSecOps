@@ -107,7 +107,7 @@ El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen es
 | Se detecta un problema después | Actions → CD → *Run workflow* con el tag de la imagen (por ejemplo `sha-1a2b3c4` o `1.0.0`). El job `revertir` la despliega y ejecuta la prueba de humo. |
 | Sin GitHub (en la máquina) | `scripts/rollback.sh ghcr.io/<usuario>/<repo>:<tag>` con las variables del `.env`. |
 
-Los pasos de despliegue, humo y carga tienen límites individuales para que un fallo por tiempo permita iniciar la reversión. La cancelación completa del job o la caída de la máquina pueden impedir que se ejecute; en ese caso hay que comprobar el estado y revertir manualmente.
+Antes de desplegar, el job guarda la referencia activa y la usa si necesita revertir, incluso si falla la descarga de la nueva imagen. Los pasos de despliegue, humo y carga tienen límites individuales para que un fallo por tiempo permita iniciar la reversión. La cancelación completa del job o la caída de la máquina pueden impedir que se ejecute; en ese caso hay que comprobar el estado y revertir manualmente.
 El primer despliegue del entorno de CD no tiene una versión anterior registrada. Si falla, el workflow detiene la aplicación no verificada. El proyecto local anterior mantiene sus propios datos y estado; no se migran automáticamente.
 
 Los tags anteriores se consultan en la página del paquete en GitHub (*Packages*) o en el resumen de cada ejecución del job `publicar`.
