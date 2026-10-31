@@ -371,7 +371,7 @@ Trivy, Gitleaks y k6 **no se instalan**: los scripts los ejecutan como contenedo
 
    ```text
    NAME                  IMAGE                  SERVICE    STATUS                    PORTS
-   reservas-app-1        reservas:local         app        Up 14 seconds (healthy)   0.0.0.0:8090->8080/tcp
+   reservas-app-1        reservas:local         app        Up 14 seconds (healthy)   127.0.0.1:8090->8080/tcp
    reservas-postgres-1   postgres:18.6-alpine   postgres   Up 20 seconds (healthy)   127.0.0.1:5433->5432/tcp
    ```
 
@@ -636,7 +636,7 @@ docker build --build-arg VERSION=1.0.0-v2 -t reservas:v2 .
 
 El runner se instala en la máquina donde va a quedar desplegado el sistema.
 
-El despliegue de este repositorio usa el proyecto Compose `reservas-cd`, con API en `127.0.0.1:18090` y PostgreSQL en `127.0.0.1:15433`, separados del entorno local. Para una ejecución temporal se puede registrar el runner con `--ephemeral` y ejecutarlo con `./run.sh`; se desregistra después de aceptar un trabajo y debe registrarse de nuevo para otro. El acceso a Docker sigue dando al runner amplios privilegios sobre la máquina.
+El despliegue de este repositorio usa el proyecto Compose `reservas-cd`, con API en `127.0.0.1:18090` y PostgreSQL en `127.0.0.1:15433`, separados del entorno local. Para una ejecución temporal se puede registrar el runner con `--ephemeral` y ejecutarlo con `./run.sh`; se desregistra después de completar un trabajo y debe registrarse de nuevo para otro. El acceso a Docker sigue dando al runner amplios privilegios sobre la máquina.
 
 1. Prepara la máquina (Linux o WSL2 con Ubuntu):
    - Docker Engine con el plugin Compose (`docker compose version` debe responder).

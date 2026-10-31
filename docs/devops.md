@@ -106,6 +106,8 @@ El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen es
 | Se detecta un problema después | Actions → CD → *Run workflow* con el tag de la imagen (por ejemplo `sha-1a2b3c4` o `1.0.0`). El job `revertir` la despliega y ejecuta la prueba de humo. |
 | Sin GitHub (en la máquina) | `scripts/rollback.sh ghcr.io/<usuario>/<repo>:<tag>` con las variables del `.env`. |
 
+Los pasos de despliegue, humo y carga tienen límites individuales para que un fallo por tiempo permita iniciar la reversión. La cancelación completa del job o la caída de la máquina pueden impedir que se ejecute; en ese caso hay que comprobar el estado y revertir manualmente.
+
 Los tags anteriores se consultan en la página del paquete en GitHub (*Packages*) o en el resumen de cada ejecución del job `publicar`.
 
 La reversión cambia la imagen, no los datos: el esquema de la base de datos debe ser compatible con la versión anterior (en este servicio, `schema.sql` solo crea tablas e índices si no existen).

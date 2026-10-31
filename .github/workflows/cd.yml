@@ -160,7 +160,6 @@ jobs:
     name: Desplegar y verificar
     needs: publicar
     if: vars.DESPLIEGUE == 'activo'
-    timeout-minutes: 15
     # Runner autohospedado registrado en la máquina del equipo con la etiqueta "dyas".
     runs-on: [self-hosted, linux, dyas]
     environment:
@@ -218,12 +217,15 @@ jobs:
 
       - name: Desplegar con Docker Compose
         id: desplegar
+        timeout-minutes: 5
         run: scripts/deploy.sh "${{ steps.firma.outputs.referencia }}"
 
       - name: Prueba de humo
+        timeout-minutes: 3
         run: scripts/smoke-test.sh "${{ needs.publicar.outputs.version-completa }}"
 
       - name: Prueba de carga del SLO (k6)
+        timeout-minutes: 5
         run: scripts/slo.sh
 
       - name: Publicar reporte de la prueba de carga
@@ -238,6 +240,7 @@ jobs:
       # El pipeline queda en rojo de todas formas: la versión nueva no pasó la verificación.
       - name: Reversión automática
         if: failure() && steps.desplegar.outcome != 'skipped'
+        timeout-minutes: 5
         run: scripts/rollback.sh
 
       - name: Cerrar sesión en GHCR
