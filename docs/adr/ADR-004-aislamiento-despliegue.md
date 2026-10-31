@@ -17,3 +17,5 @@ El workflow conserva por separado la última imagen verificada y trata de restau
 Reutilizar el volumen y el estado del entorno local conservaría sus datos en el despliegue, pero los cambios del pipeline también afectarían ese entorno. La separación permite probar CD sin modificar la base local a cambio de iniciar con una base independiente y sin una versión previa de CD. Si se necesitan los datos anteriores, su migración y verificación deben planearse antes de depender del nuevo entorno.
 
 El acceso a la aplicación queda limitado a la propia máquina. Esta restricción y un runner temporal reducen la exposición, pero el runner con acceso a Docker conserva privilegios amplios sobre el anfitrión; una máquina virtual aislada o un servidor dedicado proporcionarían una frontera adicional.
+
+Un contenedor local anterior conserva sus puertos publicados hasta que se detiene o se recrea con la nueva configuración. Los jobs de CD comprueban `reservas-app-1` y se detienen si encuentran un puerto publicado fuera de loopback; no modifican ese contenedor. El procedimiento de actualización del README indica cómo recrear solo la aplicación y comprobar el puerto.

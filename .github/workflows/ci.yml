@@ -30,6 +30,9 @@ jobs:
       - name: Descargar el código
         uses: actions/checkout@v7
 
+      - name: Probar el control de aislamiento local
+        run: bash src/test/scripts/verificar-entorno-local-test.sh
+
       - name: Instalar Java 21 (con caché de dependencias Maven)
         uses: actions/setup-java@v6
         with:

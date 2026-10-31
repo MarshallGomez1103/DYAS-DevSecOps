@@ -375,6 +375,15 @@ Trivy, Gitleaks y k6 **no se instalan**: los scripts los ejecutan como contenedo
    reservas-postgres-1   postgres:18.6-alpine   postgres   Up 20 seconds (healthy)   127.0.0.1:5433->5432/tcp
    ```
 
+   Si el proyecto local ya estaba en ejecución antes de actualizar la configuración de puertos, recrea solo la aplicación y verifica el enlace a loopback. La base de datos y su volumen se conservan:
+
+   ```sh
+   docker compose up -d --no-deps --force-recreate app
+   docker compose ps app
+   ```
+
+   Hasta recrear o detener ese contenedor, sus puertos anteriores permanecen publicados. El despliegue de CD usa otro proyecto y no modifica el contenedor local.
+
    La aplicación espera a que PostgreSQL esté sano (`depends_on` con `condition: service_healthy`) y su propio estado sale del `HEALTHCHECK` del `Dockerfile`. PostgreSQL solo queda accesible desde tu máquina (`127.0.0.1`).
 
 3. Comprueba que el proceso no corre como root:
