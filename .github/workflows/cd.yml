@@ -182,6 +182,13 @@ jobs:
       POSTGRES_PORT: '15433'
       BASE_URL: http://localhost:18090
     steps:
+      - name: Ocultar rutas del runner en los registros
+        run: |
+          echo "::add-mask::$HOME"
+          echo "::add-mask::$RUNNER_WORKSPACE"
+          echo "::add-mask::$RUNNER_TEMP"
+          echo "::add-mask::$GITHUB_WORKSPACE"
+
       - name: Descargar el código (docker-compose.yml, scripts y perf/)
         uses: actions/checkout@v7
         with:
@@ -308,6 +315,13 @@ jobs:
       # El valor del formulario se pasa por variable de entorno, nunca directo dentro del script.
       TAG: ${{ inputs.tag }}
     steps:
+      - name: Ocultar rutas del runner en los registros
+        run: |
+          echo "::add-mask::$HOME"
+          echo "::add-mask::$RUNNER_WORKSPACE"
+          echo "::add-mask::$RUNNER_TEMP"
+          echo "::add-mask::$GITHUB_WORKSPACE"
+
       - name: Descargar el código
         uses: actions/checkout@v7
         with:
