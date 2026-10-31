@@ -2,6 +2,8 @@
 
 **Estado:** aceptada
 
+El aislamiento de puertos, datos y estado se precisa en [ADR-004](ADR-004-aislamiento-despliegue.md).
+
 ## Contexto
 
 Cada versión que llega a `main` debe desplegarse sin pasos manuales en un entorno accesible, verificarse con una prueba de humo y con la prueba de carga del SLO, y poder revertirse a la versión anterior. El equipo no tiene presupuesto para servicios en la nube de pago y dispone de una máquina propia (o de laboratorio) con Docker.
@@ -26,7 +28,7 @@ Cada versión que llega a `main` debe desplegarse sin pasos manuales en un entor
 
 ## Consecuencias
 
-- El entorno es accesible para el equipo y para la demostración, pero depende de que la máquina esté encendida.
+- El entorno de CD es accesible desde la máquina del runner y depende de que esté encendida. Sus puertos no se exponen a la red (ADR-004).
 - El runner ejecuta código del repositorio en esa máquina. Por eso: solo los jobs de `main`, de tags y de la reversión manual usan el runner; los Pull Requests corren en runners de GitHub; y en un repositorio público se exige aprobación para los workflows de Pull Requests de colaboradores externos (ver la amenaza A7 en `docs/seguridad.md`).
 - La prueba de carga corre contra el entorno real y deja reservas canceladas en la base de datos. Con dos entornos (pruebas y producción) se correría contra el de pruebas.
 - Se despliega con una ventana corta sin servicio mientras se recrea el contenedor (no hay despliegue azul-verde).

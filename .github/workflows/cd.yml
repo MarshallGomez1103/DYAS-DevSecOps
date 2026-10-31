@@ -241,7 +241,14 @@ jobs:
       - name: Reversión automática
         if: failure() && steps.desplegar.outcome != 'skipped'
         timeout-minutes: 5
-        run: scripts/rollback.sh
+        run: |
+          if [[ -s "$DEPLOY_STATE_DIR/anterior" ]]; then
+            scripts/rollback.sh
+          else
+            echo "No hay versión anterior de CD: se detiene la aplicación no verificada." >&2
+            docker compose stop app
+            exit 1
+          fi
 
       - name: Cerrar sesión en GHCR
         if: always()

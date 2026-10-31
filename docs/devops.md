@@ -81,6 +81,7 @@ flowchart TB
 
 El runner solo abre conexiones salientes hacia GitHub: no hace falta abrir puertos de la máquina a Internet para desplegar.
 El proyecto Compose de CD es independiente del entorno local `reservas`: usa su propio volumen y publica ambos servicios en loopback. Un runner con acceso a Docker tiene privilegios amplios sobre la máquina; estas medidas no aíslan los trabajos del sistema anfitrión.
+La decisión y sus consecuencias están registradas en [ADR-004](adr/ADR-004-aislamiento-despliegue.md).
 
 ## 4. Configuración del despliegue
 
@@ -107,6 +108,7 @@ El script `scripts/deploy.sh` guarda en `~/.reservas-despliegue/` qué imagen es
 | Sin GitHub (en la máquina) | `scripts/rollback.sh ghcr.io/<usuario>/<repo>:<tag>` con las variables del `.env`. |
 
 Los pasos de despliegue, humo y carga tienen límites individuales para que un fallo por tiempo permita iniciar la reversión. La cancelación completa del job o la caída de la máquina pueden impedir que se ejecute; en ese caso hay que comprobar el estado y revertir manualmente.
+El primer despliegue del entorno de CD no tiene una versión anterior registrada. Si falla, el workflow detiene la aplicación no verificada. El proyecto local anterior mantiene sus propios datos y estado; no se migran automáticamente.
 
 Los tags anteriores se consultan en la página del paquete en GitHub (*Packages*) o en el resumen de cada ejecución del job `publicar`.
 
